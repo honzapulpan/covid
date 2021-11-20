@@ -1,4 +1,4 @@
-*.egg-info/
+*egg-info/
 .venv/
 venv/
 .ipynb_checkpoints/
@@ -6,4 +6,5 @@ venv/
 .python-version
 __pycache__/
 .vscode
+token.json
 
