@@ -489,3 +489,29 @@ def plot_djp_vax_ratio(df_ocko_umrti, df_ocko_jip, df_ocko_positive, days_back):
             title=f'Denní poměr neočkovaných / aktivně očkovaných pozitivně testovaných za posledních {days_back} dní')
     ax3.tick_params(axis="x", rotation=45)
     
+    
+def get_reinfection_data(days_back):
+    url ='https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakazeni-reinfekce.csv'
+    dfr = pd.read_csv(url)
+    dfr['datum'] = pd.to_datetime(dfr['datum'], errors='coerce')
+    dfr['datum'] = dfr['datum'].dt.date
+    dfr = dfr.fillna(0)
+    dfr.rename(columns={'datum': 'date',}, inplace=True)
+    
+    return dfr
+
+
+def plot_reinfection(dfr, days_back):
+    plt.style.use('ggplot')
+    fig = plt.figure(figsize=(22,10))
+    ax1 = fig.add_subplot(111)
+    ax1.ticklabel_format(useOffset=False, style='plain', axis='y')
+    dfr[-days_back:].plot(x='date', y='nove_reinfekce',
+            kind='bar', 
+                style='tab:green',
+                #marker='o',
+                linewidth=2,                   
+                legend=False,
+                grid=True, 
+                ax=ax1,
+                title=f'Počet reinfekcí za posledních {days_back} dní')
