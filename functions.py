@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 import urllib.request
 import json
@@ -12,7 +13,7 @@ def get_days_back():
     return 91
 
 def get_residents():
-    return 10682029
+    return 10701777
 
 def get_token():
     with open('token.json') as token_file:
@@ -308,16 +309,22 @@ def get_vax_data():
     vaxs = vaxs.fillna(0)
     vaxs['vaxs_active'] = vaxs['vax_active_x'] + vaxs['vax_active_y'] + vaxs['vax_active']
     vaxs = vaxs.drop(['vax_active_x', 'vax_active_y', 'vax_active', ], axis=1) 
+    
+    residents = get_residents()
+    vaxs['vaxs_active_prcs'] = vaxs['vaxs_active'] / residents
 
     return vaxs
 
-def plot_vax_data(vaxs):
+def plot_vax_data(vaxs, days_back):
     # graf vývoje aktivního očkování
-    fig = plt.figure(figsize=(22,10))
-    ax1 = fig.add_subplot(111)
+    fig = plt.figure(figsize=(22,20))
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212)    
+    
     ax1.ticklabel_format(useOffset=False, style='plain', axis='y')
+    ax1.yaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals=0))
     vaxs.plot(x='date', 
-            y='vaxs_active', 
+            y='vaxs_active_prcs', 
             kind='line', 
             style='tomato',
             marker='o',
@@ -325,7 +332,39 @@ def plot_vax_data(vaxs):
             legend=False,
             grid=True, 
             ax=ax1,  
-            title=f'Denní celkový počet aktivně očkovaných od počátku očkování.');
+            title=f'Denní procentní poměr aktivně očkovaných od počátku očkování.');
+
+    
+    ax2.ticklabel_format(useOffset=False, style='plain', axis='y')
+    ax2.yaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals=0))
+    vaxs[-days_back:].plot(x='date', 
+            y='vaxs_active_prcs', 
+            kind='line', 
+            style='tomato',
+            marker='o',
+            linewidth=2,                   
+            legend=False,
+            grid=True, 
+            ax=ax2,  
+            title=f'Denní procentní poměr aktivně očkovaných za posledních {days_back} dní.');
+    
+    #x = np.arange(days_back)
+    #x_labels = np.array(vaxs.iloc[-days_back:, vaxs.columns.get_loc('date')])
+    #y = np.array(vaxs.iloc[-days_back:, vaxs.columns.get_loc('vaxs_active_prcs')])
+
+    #z = np.polyfit(x,y,5)
+    #p = np.poly1d(z)
+    #xnew = np.linspace(x[0], x[-1], 1000)
+
+    #rects1 = ax2.bar(x, y, width=.5, color='tomato')
+    #ax2.set_xticks(np.arange(len(x)))
+    #ax2.set_xticklabels(x_labels, rotation=45)
+    #autolabel(rects1, ax2, val_prec=2)
+
+    #ax2.plot(xnew, p(xnew), 'dimgray', linewidth=3)
+
+    #ax2.grid(True)
+    #ax2.set_title(f'Denní procentní poměr aktivně očkovaných za posledních {days_back} dní')
 
     
     
