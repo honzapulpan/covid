@@ -394,7 +394,7 @@ def get_epidemic_vax_data(vaxs, days_back):
                                                         (residents-df_ocko_umrti['vaxs_active'])
     df_ocko_umrti['zemreli_ockovani_relative'] = 1e6 * (df_ocko_umrti['zemreli_dokoncene_ockovani'] + \
                                                     df_ocko_umrti['zemreli_posilujici_davka'])/ df_ocko_umrti['vaxs_active']
-
+    
     with urllib.request.urlopen(f'https://onemocneni-aktualne.mzcr.cz/api/v3/ockovani-jip?page=1&datum%5Bafter%5D={data_date}&apiToken={token}') as url:
         data = json.loads(url.read().decode())
 
@@ -483,50 +483,111 @@ def plot_djp_vax(df_ocko_umrti, df_ocko_jip, df_ocko_positive, days_back):
 def plot_djp_vax_ratio(df_ocko_umrti, df_ocko_jip, df_ocko_positive, days_back):
     # kolikrát víc neočkovaných než očkovaných 
     df_ocko_umrti['neocko_ocko_pomer'] = df_ocko_umrti['zemreli_bez_ockovani_relative'] / df_ocko_umrti['zemreli_ockovani_relative']
+    df_ocko_umrti['neocko_ocko_pomer_7']=df_ocko_umrti['neocko_ocko_pomer'].rolling(window=7).sum()/7
+    
     df_ocko_jip['neocko_ocko_pomer'] = df_ocko_jip['jip_bez_ockovani_relative'] / df_ocko_jip['jip_ockovani_relative']
+    df_ocko_jip['neocko_ocko_pomer_7']=df_ocko_jip['neocko_ocko_pomer'].rolling(window=7).sum()/7
+    
     df_ocko_positive['neocko_ocko_pomer'] = df_ocko_positive['pozitivni_bez_ockovani_relative'] / df_ocko_positive['pozitivni_ockovani_relative']
+    df_ocko_positive['neocko_ocko_pomer_7']=df_ocko_positive['neocko_ocko_pomer'].rolling(window=7).sum()/7
 
-
+    
+    def plot_djp_subplot(dff, axx, title, colour):
+        axx.bar(dff[-days_back:]['date'], dff[-days_back:]['neocko_ocko_pomer'], 
+                color=colour, #'dimgray', 
+                label='poměr neočko/očko',)
+        axx.plot(dff[-days_back:]['date'], dff[-days_back:]['neocko_ocko_pomer_7'], 
+                 color='black', 
+                 linewidth=2, 
+                 marker='o', 
+                 label='7denní průměr')
+        axx.ticklabel_format(useOffset=False, style='plain', axis='y')
+        axx.set_title(title) #f'Denní poměr neočkovaných / aktivně očkovaných zemřelých za posledních {days_back} dní')
+        axx.legend(fontsize=14)
+        axx.tick_params(axis="x", rotation=45)
+        
+    
     fig = plt.figure(figsize=(22,30))
     ax1 = fig.add_subplot(311)
     ax2 = fig.add_subplot(312)
     ax3 = fig.add_subplot(313)
 
-    df_ocko_umrti.plot(x='date', 
-            y=['neocko_ocko_pomer'], 
-            kind='bar',
-            color=['black'],
-            linewidth=3,
-            stacked=True,
-            grid=True, 
-            legend=False,
-            ax=ax1,
-            title=f'Denní poměr neočkovaných / aktivně očkovaných zemřelých za posledních {days_back} dní')
-    ax1.tick_params(axis="x", rotation=45)
+    #df_ocko_umrti.plot(x='date', 
+    #        y=['neocko_ocko_pomer'], 
+    #        kind='bar',
+    #        color=['black'],
+    #        linewidth=3,
+    #        stacked=True,
+    #        grid=True, 
+    #        legend=False,
+    #        ax=ax1,
+    #        title=f'Denní poměr neočkovaných / aktivně očkovaných zemřelých za posledních {days_back} dní')
+    #ax1.tick_params(axis="x", rotation=45)
+    
+    #ax1.bar(df_ocko_umrti[-days_back:]['date'], df_ocko_umrti[-days_back:]['neocko_ocko_pomer'], 
+    #        color='dimgray', 
+    #        label='poměr neočko/očko',)
+    #ax1.plot(df_ocko_umrti[-days_back:]['date'], df_ocko_umrti[-days_back:]['neocko_ocko_pomer_7'], 
+    #         color='black', 
+    #         linewidth=2, 
+    #         marker='o', 
+    #         label='7denní průměr')
+    #ax1.ticklabel_format(useOffset=False, style='plain', axis='y')
+    #ax1.set_title(f'Denní poměr neočkovaných / aktivně očkovaných zemřelých za posledních {days_back} dní')
+    #ax1.legend(fontsize=14)
+    #ax1.tick_params(axis="x", rotation=45)
+    
+    plot_djp_subplot(df_ocko_umrti, 
+                     ax1, 
+                     f'Denní poměr neočkovaných / aktivně očkovaných zemřelých za posledních {days_back} dní', 
+                     'dimgray')
 
-    df_ocko_jip.plot(x='date', 
-            y=['neocko_ocko_pomer'], 
-            kind='bar',
-            color=['tomato'],
-            linewidth=3,
-            stacked=True,
-            grid=True, 
-            legend=False,
-            ax=ax2,
-            title=f'Denní poměr neočkovaných / aktivně očkovaných na JIP za posledních {days_back} dní')
-    ax2.tick_params(axis="x", rotation=45)
+    #df_ocko_jip.plot(x='date', 
+    #        y=['neocko_ocko_pomer'], 
+    #        kind='bar',
+    #        color=['tomato'],
+    #        linewidth=3,
+    #        stacked=True,
+    #        grid=True, 
+    #        legend=False,
+    #        ax=ax2,
+    #        title=f'Denní poměr neočkovaných / aktivně očkovaných na JIP za posledních {days_back} dní')
+    #ax2.tick_params(axis="x", rotation=45)
+    
+    #ax2.bar(df_ocko_jip[-days_back:]['date'], df_ocko_jip[-days_back:]['neocko_ocko_pomer'], 
+    #        color='tomato', 
+    #        label='poměr neočko/očko',)
+    #ax2.plot(df_ocko_jip[-days_back:]['date'], df_ocko_jip[-days_back:]['neocko_ocko_pomer_7'], 
+    #         color='dimgray', 
+    #         linewidth=2, 
+    #         marker='o', 
+    #         label='7denní průměr')
+    #ax2.ticklabel_format(useOffset=False, style='plain', axis='y')
+    #ax2.set_title(f'Denní poměr neočkovaných / aktivně očkovaných na JIP za posledních {days_back} dní')
+    #ax2.legend(fontsize=14)
+    #ax2.tick_params(axis="x", rotation=45)
+    
+    plot_djp_subplot(df_ocko_jip, 
+                     ax2, 
+                     f'Denní poměr neočkovaných / aktivně očkovaných na JIP za posledních {days_back} dní', 
+                     'tomato')
 
-    df_ocko_positive.plot(x='date', 
-            y=['neocko_ocko_pomer'], 
-            kind='bar',
-            color=['royalblue'],
-            linewidth=3,
-            stacked=True,
-            grid=True, 
-            legend=False,
-            ax=ax3,
-            title=f'Denní poměr neočkovaných / aktivně očkovaných pozitivně testovaných za posledních {days_back} dní')
-    ax3.tick_params(axis="x", rotation=45)
+    #df_ocko_positive.plot(x='date', 
+    #        y=['neocko_ocko_pomer'], 
+    #        kind='bar',
+    #        color=['royalblue'],
+    #        linewidth=3,
+    #        stacked=True,
+    #        grid=True, 
+    #        legend=False,
+    #        ax=ax3,
+    #        title=f'Denní poměr neočkovaných / aktivně očkovaných pozitivně testovaných za posledních {days_back} dní')
+    #ax3.tick_params(axis="x", rotation=45)
+    
+    plot_djp_subplot(df_ocko_positive, 
+                     ax3, 
+                     f'Denní poměr neočkovaných / aktivně očkovaných pozitivně testovaných za posledních {days_back} dní', 
+                     'royalblue')
     
     
 def get_reinfection_data(days_back):
@@ -536,21 +597,39 @@ def get_reinfection_data(days_back):
     dfr['datum'] = dfr['datum'].dt.date
     dfr = dfr.fillna(0)
     dfr.rename(columns={'datum': 'date',}, inplace=True)
+    dfr['reinfekce_7']=dfr['nove_reinfekce'].rolling(min_periods=1, window=7).sum()/7
     
     return dfr
 
 
 def plot_reinfection(dfr, days_back):
+    #plt.style.use('ggplot')
+    #fig = plt.figure(figsize=(22,10))
+    #ax1 = fig.add_subplot(111)
+    #ax1.ticklabel_format(useOffset=False, style='plain', axis='y')
+    #dfr[-days_back:].plot(x='date', y='nove_reinfekce',
+    #        kind='bar', 
+    #            style='tab:green',
+    #            #marker='o',
+    #            linewidth=2,                   
+    #            legend=False,
+    #            grid=True, 
+    #            ax=ax1,
+    #            title=f'Počet reinfekcí za posledních {days_back} dní')
+    
     plt.style.use('ggplot')
     fig = plt.figure(figsize=(22,10))
     ax1 = fig.add_subplot(111)
+
+    ax1.bar(dfr[-days_back:]['date'], dfr[-days_back:]['nove_reinfekce'], 
+            color='tab:blue', 
+            label='nové reinfekce',)
+    ax1.plot(dfr[-days_back:]['date'], dfr[-days_back:]['reinfekce_7'], 
+             color='black', 
+             linewidth=2, 
+             marker='o', 
+             label='7denní průměr')
     ax1.ticklabel_format(useOffset=False, style='plain', axis='y')
-    dfr[-days_back:].plot(x='date', y='nove_reinfekce',
-            kind='bar', 
-                style='tab:green',
-                #marker='o',
-                linewidth=2,                   
-                legend=False,
-                grid=True, 
-                ax=ax1,
-                title=f'Počet reinfekcí za posledních {days_back} dní')
+    ax1.set_title(f'Počet reinfekcí za posledních {days_back} dní')
+    ax1.legend(fontsize=14)
+    ax1.tick_params(axis="x", rotation=45)
