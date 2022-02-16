@@ -298,7 +298,7 @@ def get_vax_data():
                         'vakcina_kod', 'vekova_skupina', 
                         'poradi_davky', 'pohlavi'], axis=1) 
     boost = boost.groupby(['datum']).sum()  ### secteni po datumech
-    boost = boost.rolling(min_periods=1, window=91).sum()  ### soucet poslednich 91 dni
+    boost = boost.rolling(min_periods=1, window=122).sum()  ### soucet poslednich 91 dni (nebo 4 měsíce=122 dní)
     boost = boost.reset_index()
     boost.rename(columns={'datum': 'date', 
                        'pocet_davek': 'vax_active',}, inplace=True)
