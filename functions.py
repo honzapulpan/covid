@@ -315,6 +315,56 @@ def get_vax_data():
 
     return vaxs
 
+def get_vax_data_simple():
+    # získání dataframu s počtem očkovaných lidí
+
+    url ='https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/ockovani-demografie.csv'
+    dfv = pd.read_csv(url)
+    dfv['datum'] = pd.to_datetime(dfv['datum'], errors='coerce')
+    dfv['datum'] = dfv['datum'].dt.date
+
+    # všechno kromě Johnsona
+
+    vax01 = dfv[( (dfv['vakcina_kod']=='CO01') |  ### vyfiltrovani jen vakcin a davek ktere nas zajimaji
+        (dfv['vakcina_kod']=='CO02') |
+        (dfv['vakcina_kod']=='CO03') |
+        (dfv['vakcina_kod']=='CO04') |            
+        (dfv['vakcina_kod']=='CO06')) & 
+        (dfv['poradi_davky']==2)]
+
+    vax01 = vax01.drop(['id', 'vakcina',  ### odstraneni prebytecnych sloupcu
+                        'vakcina_kod', 'vekova_skupina', 
+                        'poradi_davky', 'pohlavi'], axis=1) 
+    vax01 = vax01.groupby(['datum']).sum()  ### secteni po datumech
+    vax01.rename(columns={'datum': 'date', 
+                       'pocet_davek': 'vax_active',}, inplace=True)
+
+    # Johnson
+    vax02 = dfv[(dfv['vakcina_kod']=='CO04')]  ### vyfiltrovani jen vakcin a davek ktere nas zajimaji
+
+    vax02 = vax02.drop(['id', 'vakcina',  ### odstraneni prebytecnych sloupcu
+                        'vakcina_kod', 'vekova_skupina', 
+                        'poradi_davky', 'pohlavi'], axis=1) 
+    vax02 = vax02.groupby(['datum']).sum()  ### secteni po datumech
+    vax02.rename(columns={'datum': 'date', 
+                       'pocet_davek': 'vax_active',}, inplace=True)
+
+    # sloučení všech tří dataframe do jednoho 
+    vaxs = pd.merge(vax01, vax02, how='outer', on='datum')
+    vaxs = vaxs.fillna(0)
+
+    vaxs['vaxs_active'] = vaxs['vax_active_x'] + vaxs['vax_active_y']
+
+    vaxs = vaxs.drop(['vax_active_x', 'vax_active_y', ], axis=1) 
+    vaxs = vaxs.cumsum()
+    vaxs = vaxs.reset_index()
+    vaxs.rename(columns={'datum': 'date',}, inplace=True)
+
+    residents = get_residents()
+    vaxs['vaxs_active_prcs'] = vaxs['vaxs_active'] / residents
+
+    return vaxs
+
 def plot_vax_data(vaxs, days_back):
     # graf vývoje aktivního očkování
     fig = plt.figure(figsize=(22,20))
